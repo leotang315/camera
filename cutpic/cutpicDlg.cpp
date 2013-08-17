@@ -63,8 +63,8 @@ BEGIN_MESSAGE_MAP(CcutpicDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
-	ON_MESSAGE(WM_SNAP_CHANGE1, OnSnapChange1)
-	ON_MESSAGE(WM_SNAP_CHANGE2, OnSnapChange2)
+	//ON_MESSAGE(WM_SNAP_CHANGE1, OnSnapChange1)
+	//ON_MESSAGE(WM_SNAP_CHANGE2, OnSnapChange2)
 	ON_MESSAGE(WM_SNAP_ERROR, OnSnapError)
 	ON_MESSAGE(WM_SNAP_STOP, OnSnapexStop)
 	ON_BN_CLICKED(IDC_OPENCAM, &CcutpicDlg::OnBnClickedOpencam)
@@ -231,46 +231,46 @@ LRESULT  CcutpicDlg::OnSnapError(WPARAM wParam, LPARAM lParam)
 //	说明:
 //		实现对采集数据的处理和显示
 // */
-LRESULT  CcutpicDlg::OnSnapChange1(WPARAM wParam, LPARAM lParam)
-{
-	HVSTATUS status = STATUS_OK;
-	
-
-	CWnd *pWnd1 = GetDlgItem(IDC_IMAGE1);
-	CDC  *pDC1	= pWnd1->GetDC();	
-	CImage m_imge1 ;
-	m_cam1.getcimage(m_imge1);
-
-
-
-
-	
-	CRect rect;                       //图片适应控件大小
-	pWnd1->GetClientRect(&rect);	 //取得客户区尺寸
-	pDC1->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
-	m_imge1.Draw( pDC1->m_hDC,rect);	 //已控件尺寸大小来绘图
-	ReleaseDC( pDC1 );
-	
-	return 1;
-}
-
-LRESULT  CcutpicDlg::OnSnapChange2(WPARAM wParam, LPARAM lParam)
-{
-	HVSTATUS status = STATUS_OK;
-	CWnd *pWnd2 = GetDlgItem(IDC_IMAGE2);
-	CDC  *pDC2	= pWnd2->GetDC();	
-	CImage m_imge2 ;
-	m_cam2.getcimage(m_imge2);
-
-	
-	CRect rect2;                       //图片适应控件大小
-	pWnd2->GetClientRect(&rect2);	 //取得客户区尺寸
-	pDC2->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
-	m_imge2.Draw( pDC2->m_hDC,rect2);	 //已控件尺寸大小来绘图
-	ReleaseDC( pDC2 );
-	
-	return 1;
-}
+//LRESULT  CcutpicDlg::OnSnapChange1(WPARAM wParam, LPARAM lParam)
+//{
+//	HVSTATUS status = STATUS_OK;
+//	
+//
+//	CWnd *pWnd1 = GetDlgItem(IDC_IMAGE1);
+//	CDC  *pDC1	= pWnd1->GetDC();	
+//	CImage m_imge1 ;
+//	m_cam1.getcimage(m_imge1);
+//
+//
+//
+//
+//	
+//	CRect rect;                       //图片适应控件大小
+//	pWnd1->GetClientRect(&rect);	 //取得客户区尺寸
+//	pDC1->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
+//	m_imge1.Draw( pDC1->m_hDC,rect);	 //已控件尺寸大小来绘图
+//	ReleaseDC( pDC1 );
+//	
+//	return 1;
+//}
+//
+//LRESULT  CcutpicDlg::OnSnapChange2(WPARAM wParam, LPARAM lParam)
+//{
+//	HVSTATUS status = STATUS_OK;
+//	CWnd *pWnd2 = GetDlgItem(IDC_IMAGE2);
+//	CDC  *pDC2	= pWnd2->GetDC();	
+//	CImage m_imge2 ;
+//	m_cam2.getcimage(m_imge2);
+//
+//	
+//	CRect rect2;                       //图片适应控件大小
+//	pWnd2->GetClientRect(&rect2);	 //取得客户区尺寸
+//	pDC2->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
+//	m_imge2.Draw( pDC2->m_hDC,rect2);	 //已控件尺寸大小来绘图
+//	ReleaseDC( pDC2 );
+//	
+//	return 1;
+//}
 
 HVSTATUS  CcutpicDlg::GetLastStatus()
 {
@@ -347,13 +347,13 @@ unsigned CcutpicDlg::AcqThread1(void* params)
 		EnterCriticalSection(&pCcutpicDlg->m_protect_img1); 
 		CWnd *pWnd1 = pCcutpicDlg->GetDlgItem(IDC_IMAGE1);
 		CDC  *pDC1	= pWnd1->GetDC();	
-		pCcutpicDlg->m_imge1.Destroy();
-		pCcutpicDlg->m_cam1.getcimage(pCcutpicDlg->m_imge1);
+		pCcutpicDlg->mat1 = pCcutpicDlg->m_cam1.getmat();
+
 	
 		CRect rect;                                   //图片适应控件大小
 		pWnd1->GetClientRect(&rect);	              //取得客户区尺寸
 		pDC1->SetStretchBltMode(STRETCH_HALFTONE);	  //保持图片不失真
-		pCcutpicDlg->m_imge1.Draw( pDC1->m_hDC,rect); //已控件尺寸大小来绘图
+		pCcutpicDlg->DrawMatToHDC(pCcutpicDlg->mat1, pDC1->m_hDC,rect);//已控件尺寸大小来绘图
 		pCcutpicDlg->ReleaseDC( pDC1 );
 		LeaveCriticalSection(&pCcutpicDlg->m_protect_img1);   
 	}
@@ -370,13 +370,12 @@ unsigned CcutpicDlg::AcqThread2(void* params)
 		EnterCriticalSection(&pCcutpicDlg->m_protect_img2); 
 		CWnd *pWnd2 = pCcutpicDlg->GetDlgItem(IDC_IMAGE2);
 		CDC  *pDC2	= pWnd2->GetDC();	
-		pCcutpicDlg->m_imge2.Destroy();
-		pCcutpicDlg->m_cam2.getcimage(pCcutpicDlg->m_imge2);
-	
+		pCcutpicDlg->mat2 = pCcutpicDlg->m_cam2.getmat();
+
 		CRect rect;                                   //图片适应控件大小
 		pWnd2->GetClientRect(&rect);	              //取得客户区尺寸
 		pDC2->SetStretchBltMode(STRETCH_HALFTONE);	  //保持图片不失真
-		pCcutpicDlg->m_imge2.Draw( pDC2->m_hDC,rect); //已控件尺寸大小来绘图
+		pCcutpicDlg->DrawMatToHDC(pCcutpicDlg->mat2, pDC2->m_hDC,rect); //已控件尺寸大小来绘图
 		pCcutpicDlg->ReleaseDC( pDC2 );
 		LeaveCriticalSection(&pCcutpicDlg->m_protect_img2);   
 	}
@@ -385,19 +384,34 @@ unsigned CcutpicDlg::AcqThread2(void* params)
 
 void CcutpicDlg::OnBnClickedSavepic()
 {
+	vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(9);
+
 	num++;
-	std::string dir="ss";
-	char base_name[256]; sprintf(base_name,"%06d.bmp",num);
+	std::string dir="aa";
+	char base_name[256]; sprintf(base_name,"%06d.png",num);
 	std::string left_img_file_name  = dir + "/left_" + base_name;
 	std::string right_img_file_name = dir + "/right_" + base_name;
 
 	//ResetEvent(m_push);
 	EnterCriticalSection(&m_protect_img1); 
 	EnterCriticalSection(&m_protect_img2); 
-	m_imge1.Save(left_img_file_name.c_str());
-	m_imge2.Save(right_img_file_name.c_str());
+	//m_imge1.Save(left_img_file_name.c_str());
+	//m_imge2.Save(right_img_file_name.c_str());
+	cv::imwrite(left_img_file_name,mat1,compression_params);
+	cv::imwrite(right_img_file_name,mat2,compression_params);
 	LeaveCriticalSection(&m_protect_img2);   
 	LeaveCriticalSection(&m_protect_img1);  
 	//SetEvent(m_push);
+
+}
+
+void  CcutpicDlg::DrawMatToHDC(cv::Mat mat,HDC hDCDst,CRect rect)
+{
+	IplImage limge = mat;
+	CvvImage cimge;
+	cimge.CopyOf(&limge,1);
+	cimge.DrawToHDC(hDCDst,rect);
 
 }

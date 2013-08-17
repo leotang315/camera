@@ -277,6 +277,7 @@ HVSTATUS HV_Camera::HVregister(HV_SNAP_PROC pSnapFunc,void *pParam)
 	ppBuf[0] = m_pRawBuffer;
 	status = HVStartSnap(m_hhv, ppBuf,1);
 
+
 	HV_VERIFY(status);
 	return status;
 }
@@ -320,7 +321,8 @@ IplImage *  HV_Camera::Byte2IplImg( byte *pImg,int width,int height,int bitCount
 ****************************************************************************/
 cv::Mat  HV_Camera::getmat()
 {
-	 
+	ConvertBayer2Rgb(m_pImageBuffer,m_pRawBuffer,Width,Height,ConvertType,
+									m_pLutR,m_pLutG,m_pLutB,false,m_Layout);
 	IplImage*  Pimage;
 	Pimage = Byte2IplImg(m_pImageBuffer, Width ,Height );
 	cv::Mat mat(Pimage);

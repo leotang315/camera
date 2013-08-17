@@ -5,7 +5,10 @@
 #pragma once
 
 #include "Camera.h"
+#include "CvvImage.h"
 
+#include <vector>
+using namespace std;
 	//自定义消息ID号
 #define WM_SNAP_CHANGE1		(WM_USER + 100)
 #define WM_SNAP_CHANGE2		(WM_USER + 101)
@@ -36,8 +39,8 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	afx_msg LRESULT OnSnapChange1(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnSnapChange2(WPARAM wParam, LPARAM lParam);
+	//afx_msg LRESULT OnSnapChange1(WPARAM wParam, LPARAM lParam);
+	//afx_msg LRESULT OnSnapChange2(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnSnapError(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnSnapexStop(WPARAM wParam, LPARAM lParam);
 private:
@@ -46,6 +49,7 @@ private:
 	static int CALLBACK SnapThreadCallback2(HV_SNAP_INFO *pInfo);
 	static unsigned __stdcall AcqThread1(void *params);
 	static unsigned __stdcall AcqThread2(void *params);
+	static void DrawMatToHDC(cv::Mat,HDC hDCDst,CRect rect);
 		/// 获取状态码
 	HVSTATUS GetLastStatus();
 	int  m_nError;			///< 错误计数
@@ -57,13 +61,18 @@ private:
 	CRITICAL_SECTION m_protect_img2;
 	HANDLE m_hAcqThread1;
 	HANDLE m_hAcqThread2;
-	CImage m_imge1 ;
-	CImage m_imge2 ;
+	/*CImage m_imge1 ;
+	CImage m_imge2 ;*/
+
+
 	int num; 
 public:
+	cv::Mat mat1;
+	cv::Mat mat2;
 	int dwLastStatus;
 	HV_Camera m_cam1;
 	HV_Camera m_cam2;
 	afx_msg void OnBnClickedOpencam();
 	afx_msg void OnBnClickedSavepic();
+	
 };
