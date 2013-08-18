@@ -65,10 +65,13 @@ BEGIN_MESSAGE_MAP(CcutpicDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	//ON_MESSAGE(WM_SNAP_CHANGE1, OnSnapChange1)
 	//ON_MESSAGE(WM_SNAP_CHANGE2, OnSnapChange2)
-	ON_MESSAGE(WM_SNAP_ERROR, OnSnapError)
+	//ON_MESSAGE(WM_SNAP_ERROR, OnSnapError)
 	ON_MESSAGE(WM_SNAP_STOP, OnSnapexStop)
 	ON_BN_CLICKED(IDC_OPENCAM, &CcutpicDlg::OnBnClickedOpencam)
 	ON_BN_CLICKED(IDC_SAVEPIC, &CcutpicDlg::OnBnClickedSavepic)
+	ON_BN_CLICKED(IDC_Capture_images, &CcutpicDlg::OnBnClickedCaptureimages)
+	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_StopCapture, &CcutpicDlg::OnBnClickedStopcapture)
 END_MESSAGE_MAP()
 
 
@@ -105,7 +108,8 @@ BOOL CcutpicDlg::OnInitDialog()
 
 	// TODO: Add extra initialization here
 
-	num=0;
+	num_save=0;
+	num_capture=0;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -198,111 +202,111 @@ int CALLBACK  CcutpicDlg::SnapThreadCallback2(HV_SNAP_INFO *pInfo)
 }
 
 
-/*
-	函数:
-		OnSnapError
-	输入参数:
-		WPARAM wParam			没有使用		
-		LPARAM lParam			异常状态码
-	输出参数:
-		LRESULT						
-	说明:
-		摄像机采集异常错误报告
-*/
-LRESULT  CcutpicDlg::OnSnapError(WPARAM wParam, LPARAM lParam)
-{	
-	//CErrorBox ErrDlg;
-	//ErrDlg.m_dwStatus = lParam;
-	//if (ErrDlg.DoModal()==IDOK)
-	//{
-	//	OnSnapexStop();
-	//}	
-	return 1;
-}
-//
-//*
+///*
 //	函数:
-//		OnSnapChange
+//		OnSnapError
 //	输入参数:
-//		WPARAM wParam			字参数，在消息中为当前可以处理的图像序号		
-//		LPARAM lParam			没有使用
+//		WPARAM wParam			没有使用		
+//		LPARAM lParam			异常状态码
 //	输出参数:
 //		LRESULT						
 //	说明:
-//		实现对采集数据的处理和显示
-// */
-//LRESULT  CcutpicDlg::OnSnapChange1(WPARAM wParam, LPARAM lParam)
-//{
-//	HVSTATUS status = STATUS_OK;
-//	
-//
-//	CWnd *pWnd1 = GetDlgItem(IDC_IMAGE1);
-//	CDC  *pDC1	= pWnd1->GetDC();	
-//	CImage m_imge1 ;
-//	m_cam1.getcimage(m_imge1);
-//
-//
-//
-//
-//	
-//	CRect rect;                       //图片适应控件大小
-//	pWnd1->GetClientRect(&rect);	 //取得客户区尺寸
-//	pDC1->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
-//	m_imge1.Draw( pDC1->m_hDC,rect);	 //已控件尺寸大小来绘图
-//	ReleaseDC( pDC1 );
-//	
+//		摄像机采集异常错误报告
+//*/
+//LRESULT  CcutpicDlg::OnSnapError(WPARAM wParam, LPARAM lParam)
+//{	
+//	//CErrorBox ErrDlg;
+//	//ErrDlg.m_dwStatus = lParam;
+//	//if (ErrDlg.DoModal()==IDOK)
+//	//{
+//	//	OnSnapexStop();
+//	//}	
 //	return 1;
 //}
+////
+////*
+////	函数:
+////		OnSnapChange
+////	输入参数:
+////		WPARAM wParam			字参数，在消息中为当前可以处理的图像序号		
+////		LPARAM lParam			没有使用
+////	输出参数:
+////		LRESULT						
+////	说明:
+////		实现对采集数据的处理和显示
+//// */
+////LRESULT  CcutpicDlg::OnSnapChange1(WPARAM wParam, LPARAM lParam)
+////{
+////	HVSTATUS status = STATUS_OK;
+////	
+////
+////	CWnd *pWnd1 = GetDlgItem(IDC_IMAGE1);
+////	CDC  *pDC1	= pWnd1->GetDC();	
+////	CImage m_imge1 ;
+////	m_cam1.getcimage(m_imge1);
+////
+////
+////
+////
+////	
+////	CRect rect;                       //图片适应控件大小
+////	pWnd1->GetClientRect(&rect);	 //取得客户区尺寸
+////	pDC1->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
+////	m_imge1.Draw( pDC1->m_hDC,rect);	 //已控件尺寸大小来绘图
+////	ReleaseDC( pDC1 );
+////	
+////	return 1;
+////}
+////
+////LRESULT  CcutpicDlg::OnSnapChange2(WPARAM wParam, LPARAM lParam)
+////{
+////	HVSTATUS status = STATUS_OK;
+////	CWnd *pWnd2 = GetDlgItem(IDC_IMAGE2);
+////	CDC  *pDC2	= pWnd2->GetDC();	
+////	CImage m_imge2 ;
+////	m_cam2.getcimage(m_imge2);
+////
+////	
+////	CRect rect2;                       //图片适应控件大小
+////	pWnd2->GetClientRect(&rect2);	 //取得客户区尺寸
+////	pDC2->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
+////	m_imge2.Draw( pDC2->m_hDC,rect2);	 //已控件尺寸大小来绘图
+////	ReleaseDC( pDC2 );
+////	
+////	return 1;
+////}
 //
-//LRESULT  CcutpicDlg::OnSnapChange2(WPARAM wParam, LPARAM lParam)
+//HVSTATUS  CcutpicDlg::GetLastStatus()
 //{
-//	HVSTATUS status = STATUS_OK;
-//	CWnd *pWnd2 = GetDlgItem(IDC_IMAGE2);
-//	CDC  *pDC2	= pWnd2->GetDC();	
-//	CImage m_imge2 ;
-//	m_cam2.getcimage(m_imge2);
-//
+//	//HV_ARG_GET_LAST_STATUS ArgFeature;
+//	//ArgFeature.type = HV_LAST_STATUS_TRANSFER;
+//	//
+//	//HV_RES_GET_LAST_STATUS ResFeature;
+//	//
+//	//HVAPI_CONTROL_PARAMETER  p;
+//	//p.pInBuf		 = &ArgFeature;
+//	//p.dwInBufSize	 = sizeof(ArgFeature);	
+//	//p.pOutBuf		 = &ResFeature;
+//	//p.dwOutBufSize	 = sizeof(ResFeature);
+//	//p.pBytesRet		 = NULL;		
+//	//p.code			 = ORD_GET_LAST_STATUS;
+//	//int	dwSize = sizeof(p);
 //	
-//	CRect rect2;                       //图片适应控件大小
-//	pWnd2->GetClientRect(&rect2);	 //取得客户区尺寸
-//	pDC2->SetStretchBltMode(STRETCH_HALFTONE);	 //保持图片不失真
-//	m_imge2.Draw( pDC2->m_hDC,rect2);	 //已控件尺寸大小来绘图
-//	ReleaseDC( pDC2 );
+////	HVSTATUS status = HVCommand(m_hhv, CMD_HVAPI_CONTROL, &p, &dwSize);
+//	/*if(status != STATUS_OK)
+//	{
+//		TRACE("HVCommand return status is %d", status);
+//	}
+//	*/
+//	/*dwLastStatus = 0;
 //	
-//	return 1;
+//	if (HV_SUCCESS(status)) {
+//		dwLastStatus = ResFeature.status;
+//	}
+//	*/
+//	HVSTATUS status =STATUS_OK;
+//	return status;
 //}
-
-HVSTATUS  CcutpicDlg::GetLastStatus()
-{
-	//HV_ARG_GET_LAST_STATUS ArgFeature;
-	//ArgFeature.type = HV_LAST_STATUS_TRANSFER;
-	//
-	//HV_RES_GET_LAST_STATUS ResFeature;
-	//
-	//HVAPI_CONTROL_PARAMETER  p;
-	//p.pInBuf		 = &ArgFeature;
-	//p.dwInBufSize	 = sizeof(ArgFeature);	
-	//p.pOutBuf		 = &ResFeature;
-	//p.dwOutBufSize	 = sizeof(ResFeature);
-	//p.pBytesRet		 = NULL;		
-	//p.code			 = ORD_GET_LAST_STATUS;
-	//int	dwSize = sizeof(p);
-	
-//	HVSTATUS status = HVCommand(m_hhv, CMD_HVAPI_CONTROL, &p, &dwSize);
-	/*if(status != STATUS_OK)
-	{
-		TRACE("HVCommand return status is %d", status);
-	}
-	*/
-	/*dwLastStatus = 0;
-	
-	if (HV_SUCCESS(status)) {
-		dwLastStatus = ResFeature.status;
-	}
-	*/
-	HVSTATUS status =STATUS_OK;
-	return status;
-}
 
 
 LRESULT CcutpicDlg::OnSnapexStop(WPARAM wParam, LPARAM lParam) 
@@ -388,9 +392,9 @@ void CcutpicDlg::OnBnClickedSavepic()
     compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
     compression_params.push_back(9);
 
-	num++;
+	num_save++;
 	std::string dir="aa";
-	char base_name[256]; sprintf(base_name,"%06d.png",num);
+	char base_name[256]; sprintf(base_name,"%06d.png",num_save);
 	std::string left_img_file_name  = dir + "/left_" + base_name;
 	std::string right_img_file_name = dir + "/right_" + base_name;
 
@@ -414,4 +418,43 @@ void  CcutpicDlg::DrawMatToHDC(cv::Mat mat,HDC hDCDst,CRect rect)
 	cimge.CopyOf(&limge,1);
 	cimge.DrawToHDC(hDCDst,rect);
 
+}
+
+void CcutpicDlg::OnBnClickedCaptureimages()
+{
+	SetTimer(1,500,NULL);
+
+}
+
+
+void CcutpicDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: Add your message handler code here and/or call default
+	vector<int> compression_params;
+    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+    compression_params.push_back(9);
+
+	num_capture++;
+	std::string dir="Captureimages";
+	char base_name[256]; sprintf(base_name,"%06d.png",num_capture);
+	std::string left_img_file_name  = dir + "/left_" + base_name;
+	std::string right_img_file_name = dir + "/right_" + base_name;
+
+	//ResetEvent(m_push);
+	EnterCriticalSection(&m_protect_img1); 
+	EnterCriticalSection(&m_protect_img2); 
+	//m_imge1.Save(left_img_file_name.c_str());
+	//m_imge2.Save(right_img_file_name.c_str());
+	cv::imwrite(left_img_file_name,mat1,compression_params);
+	cv::imwrite(right_img_file_name,mat2,compression_params);
+	LeaveCriticalSection(&m_protect_img2);   
+	LeaveCriticalSection(&m_protect_img1);  
+	//SetEvent(m_push);
+	CDialogEx::OnTimer(nIDEvent);
+}
+
+
+void CcutpicDlg::OnBnClickedStopcapture()
+{
+	KillTimer(1);
 }

@@ -68,20 +68,24 @@ HV_Camera::HV_Camera()
 }
 HV_Camera::~HV_Camera()
 {
-	HVSTATUS status =STATUS_OK;
+	
 	
 	//	停止采集图像到内存，可以再次调用HVStartSnapEx启动数字摄像机采集
+	HVSTATUS status =STATUS_OK;
 	status = HVStopSnap(m_hhv);
 	HV_VERIFY(status);
-	
-	 status = STATUS_OK;
 
-	/*
-	 *	终止数字摄像机采集图像到内存，同时释放所有采集环境，
-	 *	再次启动数字摄像机采集，必须重新初始化	
-	 */
+	//	终止数字摄像机采集图像到内存，同时释放所有采集环境，
+	//	再次启动数字摄像机采集，必须重新初始化	
+	status = STATUS_OK;
 	status = HVCloseSnap(m_hhv);
 	HV_VERIFY(status);
+
+	//  关闭设备
+	status = STATUS_OK;
+	EndHVDevice(m_hhv);  //关闭设备
+	HV_VERIFY(status);
+
 
 	delete m_pRawBuffer;
 	delete m_pImageBuffer;

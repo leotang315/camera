@@ -41,7 +41,7 @@ protected:
 public:
 	//afx_msg LRESULT OnSnapChange1(WPARAM wParam, LPARAM lParam);
 	//afx_msg LRESULT OnSnapChange2(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnSnapError(WPARAM wParam, LPARAM lParam);
+	//afx_msg LRESULT OnSnapError(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnSnapexStop(WPARAM wParam, LPARAM lParam);
 private:
 	/// 采集回调函数，用户也可以定义为全局函数，如果作为类的成员函数，必须为静态成员函数。
@@ -51,7 +51,7 @@ private:
 	static unsigned __stdcall AcqThread2(void *params);
 	static void DrawMatToHDC(cv::Mat,HDC hDCDst,CRect rect);
 		/// 获取状态码
-	HVSTATUS GetLastStatus();
+	//HVSTATUS GetLastStatus();
 	int  m_nError;			///< 错误计数
 	int  m_nLost;			///< 丢帧计数
 	HANDLE m_hAcqEvent1;
@@ -65,7 +65,8 @@ private:
 	CImage m_imge2 ;*/
 
 
-	int num; 
+	int num_save; 
+	int num_capture;
 public:
 	cv::Mat mat1;
 	cv::Mat mat2;
@@ -74,5 +75,7 @@ public:
 	HV_Camera m_cam2;
 	afx_msg void OnBnClickedOpencam();
 	afx_msg void OnBnClickedSavepic();
-	
+	afx_msg void OnBnClickedCaptureimages();
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnBnClickedStopcapture();
 };
