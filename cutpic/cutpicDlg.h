@@ -70,6 +70,9 @@ private:
 public:
 	cv::Mat mat1;
 	cv::Mat mat2;
+	vector<cv::Mat> vectmat1;
+	vector<cv::Mat> vectmat2;
+	bool capture_stat;
 	int dwLastStatus;
 	HV_Camera m_cam1;
 	HV_Camera m_cam2;

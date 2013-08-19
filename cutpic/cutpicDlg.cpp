@@ -110,6 +110,7 @@ BOOL CcutpicDlg::OnInitDialog()
 
 	num_save=0;
 	num_capture=0;
+	capture_stat=false;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -352,6 +353,10 @@ unsigned CcutpicDlg::AcqThread1(void* params)
 		CWnd *pWnd1 = pCcutpicDlg->GetDlgItem(IDC_IMAGE1);
 		CDC  *pDC1	= pWnd1->GetDC();	
 		pCcutpicDlg->mat1 = pCcutpicDlg->m_cam1.getmat();
+		cv::Mat tepmat=pCcutpicDlg->mat1.clone();
+		if(pCcutpicDlg->capture_stat)
+			pCcutpicDlg->vectmat1.push_back( tepmat);
+
 
 	
 		CRect rect;                                   //图片适应控件大小
@@ -422,39 +427,69 @@ void  CcutpicDlg::DrawMatToHDC(cv::Mat mat,HDC hDCDst,CRect rect)
 
 void CcutpicDlg::OnBnClickedCaptureimages()
 {
-	SetTimer(1,500,NULL);
+	//SetTimer(1,100,NULL);
+	capture_stat=true;
 
 }
-
 
 void CcutpicDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
-	vector<int> compression_params;
-    compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
-    compression_params.push_back(9);
+	//double t = (double)cv::getTickCount();
 
-	num_capture++;
-	std::string dir="Captureimages";
-	char base_name[256]; sprintf(base_name,"%06d.png",num_capture);
-	std::string left_img_file_name  = dir + "/left_" + base_name;
-	std::string right_img_file_name = dir + "/right_" + base_name;
+	//vector<int> compression_params;
+ //   compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+ //   compression_params.push_back(3);
 
-	//ResetEvent(m_push);
-	EnterCriticalSection(&m_protect_img1); 
-	EnterCriticalSection(&m_protect_img2); 
-	//m_imge1.Save(left_img_file_name.c_str());
-	//m_imge2.Save(right_img_file_name.c_str());
-	cv::imwrite(left_img_file_name,mat1,compression_params);
-	cv::imwrite(right_img_file_name,mat2,compression_params);
-	LeaveCriticalSection(&m_protect_img2);   
-	LeaveCriticalSection(&m_protect_img1);  
+	//num_capture++;
+	//std::string dir="Captureimages";
+	//char base_name[256]; sprintf(base_name,"%06d.png",num_capture);
+	//std::string left_img_file_name  = dir + "/left_" + base_name;
+	//std::string right_img_file_name = dir + "/right_" + base_name;
+
+	////ResetEvent(m_push);
+	//EnterCriticalSection(&m_protect_img1); 
+	//EnterCriticalSection(&m_protect_img2); 
+	////m_imge1.Save(left_img_file_name.c_str());
+	////m_imge2.Save(right_img_file_name.c_str());
+	//cv::imwrite(left_img_file_name,mat1,compression_params);
+	//cv::imwrite(right_img_file_name,mat2,compression_params);
+	//LeaveCriticalSection(&m_protect_img2);   
+	//LeaveCriticalSection(&m_protect_img1);  
+
+	//t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
+
+	//EnterCriticalSection(&m_protect_img1); 
+	//EnterCriticalSection(&m_protect_img2); 
+	//vectmat1.push_back(mat1);
+	//vectmat2.push_back(mat2);
+	//LeaveCriticalSection(&m_protect_img2);   
+	//LeaveCriticalSection(&m_protect_img1);  
+
 	//SetEvent(m_push);
 	CDialogEx::OnTimer(nIDEvent);
 }
 
-
 void CcutpicDlg::OnBnClickedStopcapture()
 {
 	KillTimer(1);
+	vector<int> compression_params;
+	compression_params.push_back(CV_IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(3);
+
+	capture_stat=false;
+	const int n =vectmat1.size();
+
+	for(int i=0;i<n;i++)
+	{
+		std::string dir="Captureimages";
+		char base_name[256]; sprintf(base_name,"%06d.png",i);
+		std::string left_img_file_name  = dir + "/left_" + base_name;
+		std::string right_img_file_name = dir + "/right_" + base_name;
+
+		cv::imwrite(left_img_file_name,vectmat1[i],compression_params);
+		//cv::imwrite(right_img_file_name,vectmat2[i],compression_params);
+	}
+
+	
 }
