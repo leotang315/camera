@@ -6,7 +6,7 @@
 
 #include "Camera.h"
 #include "CvvImage.h"
-
+#include "StereoCalib.h"
 #include <vector>
 using namespace std;
 	//自定义消息ID号
@@ -42,7 +42,7 @@ public:
 	//afx_msg LRESULT OnSnapChange1(WPARAM wParam, LPARAM lParam);
 	//afx_msg LRESULT OnSnapChange2(WPARAM wParam, LPARAM lParam);
 	//afx_msg LRESULT OnSnapError(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnSnapexStop(WPARAM wParam, LPARAM lParam);
+	
 private:
 	/// 采集回调函数，用户也可以定义为全局函数，如果作为类的成员函数，必须为静态成员函数。
 	static int CALLBACK SnapThreadCallback1(HV_SNAP_INFO *pInfo);
@@ -72,13 +72,18 @@ public:
 	cv::Mat mat2;
 	vector<cv::Mat> vectmat1;
 	vector<cv::Mat> vectmat2;
-	bool capture_stat;
+	bool capture_stat;               //连续采集标志位
+	bool rectify_stat;               //校正标志位
+	StereoCalib stereocal;
 	int dwLastStatus;
 	HV_Camera m_cam1;
 	HV_Camera m_cam2;
+	afx_msg LRESULT OnSnapexStop(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnBnClickedOpencam();
 	afx_msg void OnBnClickedSavepic();
 	afx_msg void OnBnClickedCaptureimages();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnBnClickedStopcapture();
+	afx_msg void OnBnClickedLoadcalibdata();
+	afx_msg void OnBnClickedRemapimage();
 };

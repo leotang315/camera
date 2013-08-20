@@ -71,7 +71,9 @@ BEGIN_MESSAGE_MAP(CcutpicDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_SAVEPIC, &CcutpicDlg::OnBnClickedSavepic)
 	ON_BN_CLICKED(IDC_Capture_images, &CcutpicDlg::OnBnClickedCaptureimages)
 	ON_WM_TIMER()
-	ON_BN_CLICKED(IDC_StopCapture, &CcutpicDlg::OnBnClickedStopcapture)
+	ON_BN_CLICKED(IDC_Stop_capture, &CcutpicDlg::OnBnClickedStopcapture)
+	ON_BN_CLICKED(IDC_Load_calib_data, &CcutpicDlg::OnBnClickedLoadcalibdata)
+	ON_BN_CLICKED(IDC_Remap_image, &CcutpicDlg::OnBnClickedRemapimage)
 END_MESSAGE_MAP()
 
 
@@ -111,6 +113,7 @@ BOOL CcutpicDlg::OnInitDialog()
 	num_save=0;
 	num_capture=0;
 	capture_stat=false;
+	rectify_stat=false;
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -353,10 +356,17 @@ unsigned CcutpicDlg::AcqThread1(void* params)
 		CWnd *pWnd1 = pCcutpicDlg->GetDlgItem(IDC_IMAGE1);
 		CDC  *pDC1	= pWnd1->GetDC();	
 		pCcutpicDlg->mat1 = pCcutpicDlg->m_cam1.getmat();
-		cv::Mat tepmat=pCcutpicDlg->mat1.clone();
-		if(pCcutpicDlg->capture_stat)
-			pCcutpicDlg->vectmat1.push_back( tepmat);
 
+
+		if(pCcutpicDlg->rectify_stat)
+			remap(pCcutpicDlg->mat1, pCcutpicDlg->mat1, pCcutpicDlg->stereocal.m_remapmatrixs.mX1, pCcutpicDlg->stereocal.m_remapmatrixs.mY1, INTER_LINEAR);
+		if(pCcutpicDlg->capture_stat)
+		{
+			cv::Mat tepmat=pCcutpicDlg->mat1.clone();
+			pCcutpicDlg->vectmat1.push_back( tepmat);
+		}
+			
+		
 
 	
 		CRect rect;                                   //图片适应控件大小
@@ -381,6 +391,15 @@ unsigned CcutpicDlg::AcqThread2(void* params)
 		CDC  *pDC2	= pWnd2->GetDC();	
 		pCcutpicDlg->mat2 = pCcutpicDlg->m_cam2.getmat();
 
+
+		if(pCcutpicDlg->rectify_stat)
+			remap(pCcutpicDlg->mat2, pCcutpicDlg->mat2, pCcutpicDlg->stereocal.m_remapmatrixs.mX2, pCcutpicDlg->stereocal.m_remapmatrixs.mY2, INTER_LINEAR);
+		if(pCcutpicDlg->capture_stat)
+		{
+			cv::Mat tepmat=pCcutpicDlg->mat2.clone();	
+			pCcutpicDlg->vectmat2.push_back(tepmat);
+		}
+			
 		CRect rect;                                   //图片适应控件大小
 		pWnd2->GetClientRect(&rect);	              //取得客户区尺寸
 		pDC2->SetStretchBltMode(STRETCH_HALFTONE);	  //保持图片不失真
@@ -488,8 +507,32 @@ void CcutpicDlg::OnBnClickedStopcapture()
 		std::string right_img_file_name = dir + "/right_" + base_name;
 
 		cv::imwrite(left_img_file_name,vectmat1[i],compression_params);
-		//cv::imwrite(right_img_file_name,vectmat2[i],compression_params);
+		cv::imwrite(right_img_file_name,vectmat2[i],compression_params);
 	}
 
 	
+}
+
+
+void CcutpicDlg::OnBnClickedLoadcalibdata()
+{
+	if(!stereocal.LoadCalibData())
+	{
+		//加载数据错误处理，add提示工作
+	};
+
+	if(!stereocal.RectifyStereoCamera())
+	{
+		//校正数据错误处理，add提示工作
+	}
+
+	{
+		//加载标定数据成功，下一步动作
+	}
+}
+
+
+void CcutpicDlg::OnBnClickedRemapimage()
+{
+	rectify_stat =true;
 }
