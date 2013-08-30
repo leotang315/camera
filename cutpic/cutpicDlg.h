@@ -40,13 +40,18 @@ private:
 	/// 采集回调函数，用户也可以定义为全局函数，如果作为类的成员函数，必须为静态成员函数。
 	static int CALLBACK SnapThreadCallback1(HV_SNAP_INFO *pInfo);   //作为大恒摄像机的连续采集图像的回调函数
 	static int CALLBACK SnapThreadCallback2(HV_SNAP_INFO *pInfo);
-	static unsigned __stdcall AcqThread1(void *params);				//程序线程函数 读取并显示图像
+	static unsigned __stdcall AcqThread1(void *params);				//程序线程函数 从摄像机读取并显示图像
 	static unsigned __stdcall AcqThread2(void *params);
-	static unsigned __stdcall ShowdispThread(void *params);
+	static unsigned __stdcall ShowdispThread(void *params);			//程序线程函数 处理和现实视差图
+	static unsigned __stdcall ReadfromfileThread(void *params);			//程序线程函数  从文件读取图像和SnapThreadCallback1有类似功能
+
 	static void DrawMatToHDC(cv::Mat,HDC hDCDst,CRect rect);		
+	int getDisparityImage(cv::Mat& disparity, cv::Mat& disparityImage, bool isColor);
 
 	HANDLE m_hAcqEvent1;				    //摄像机每次采集一帧图像  通过回调函数 SnapThreadCallback1 将发出此事件                   
 	HANDLE m_hAcqEvent2;
+	HANDLE m_hReadEvent1;
+	HANDLE m_hReadEvent2;
 	CRITICAL_SECTION m_protect_mat1;		//mat1的保护区				
 	CRITICAL_SECTION m_protect_mat2;		//mat2的保护区	
 	CRITICAL_SECTION m_protect_workmat1;	//workmat1的保护区				
@@ -54,6 +59,7 @@ private:
 	HANDLE m_hAcqThread1;
 	HANDLE m_hAcqThread2;
 	HANDLE m_hShowdispThread;
+	HANDLE m_hReadfromfileThread;
 
 	int num_save; 
 	int num_capture;
@@ -77,4 +83,5 @@ public:
 	afx_msg void OnBnClickedLoadcalibdata();
 	afx_msg void OnBnClickedRemapimage();
 	afx_msg void OnBnClickedShowdisp();
+	afx_msg void OnBnClickedWorkonfile();
 };

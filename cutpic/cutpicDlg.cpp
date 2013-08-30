@@ -71,6 +71,7 @@ BEGIN_MESSAGE_MAP(CcutpicDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Load_calib_data, &CcutpicDlg::OnBnClickedLoadcalibdata)
 	ON_BN_CLICKED(IDC_Remap_image, &CcutpicDlg::OnBnClickedRemapimage)
 	ON_BN_CLICKED(IDC_Show_disp, &CcutpicDlg::OnBnClickedShowdisp)
+	ON_BN_CLICKED(IDC_Workon_file, &CcutpicDlg::OnBnClickedWorkonfile)
 END_MESSAGE_MAP()
 
 
@@ -430,7 +431,8 @@ unsigned CcutpicDlg::ShowdispThread(void *params)
 		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat2);  
 		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat1); 
 
-		elas.function(tempmat1,tempmat2,disp);		
+		elas.function(tempmat1,tempmat2,disp);
+		pCcutpicDlg->getDisparityImage(disp,disp,1);
 		CWnd *pWnd3 = pCcutpicDlg->GetDlgItem(IDC_IMAGE3);
 		CDC  *pDC3	= pWnd3->GetDC();	
 		CRect rect;											//图片适应控件大小
@@ -438,9 +440,59 @@ unsigned CcutpicDlg::ShowdispThread(void *params)
 		pDC3->SetStretchBltMode(STRETCH_HALFTONE);			//保持图片不失真
 		pCcutpicDlg->DrawMatToHDC(disp, pDC3->m_hDC,rect);  //已控件尺寸大小来绘图
 		pCcutpicDlg->ReleaseDC( pDC3 );
+		SetEvent(pCcutpicDlg->m_hReadEvent1);
+		SetEvent(pCcutpicDlg->m_hReadEvent2);
 	}
 	
 	return 1;
+}
+
+unsigned CcutpicDlg::ReadfromfileThread(void* params)
+{
+	CcutpicDlg* pCcutpicDlg = (CcutpicDlg*) params;
+
+	std::string dir="D:/my_opencv/小论文/摄像机/Debug/aa/data4";
+	CString path;
+	path=dir.c_str();
+	int count = 0;
+	CFileFind finder;
+	BOOL working = finder.FindFile(path + "\\*.*");
+	while (working)
+	{
+		working = finder.FindNextFile();
+		if (finder.IsDots())
+		continue;
+		if (!finder.IsDirectory())
+		count++;
+	}
+	count =count/2;
+
+	for(int i=1;i<+count;i++)
+	{
+		if(WaitForSingleObject(pCcutpicDlg->m_hReadEvent1, INFINITE)==WAIT_OBJECT_0
+			  &&WaitForSingleObject(pCcutpicDlg->m_hReadEvent2, INFINITE)==WAIT_OBJECT_0)
+		{
+			
+			char base_name[256]; sprintf(base_name,"%06d.png",i);
+			std::string left_img_file_name  = dir + "/left_" + base_name;
+			std::string right_img_file_name = dir + "/right_" + base_name;
+			EnterCriticalSection(&pCcutpicDlg->m_protect_mat1); 
+			EnterCriticalSection(&pCcutpicDlg->m_protect_mat2); 
+			pCcutpicDlg->mat1 = imread(left_img_file_name);
+			pCcutpicDlg->mat2 = imread(right_img_file_name);
+			LeaveCriticalSection(&pCcutpicDlg->m_protect_mat2);  
+			LeaveCriticalSection(&pCcutpicDlg->m_protect_mat1);
+			
+			SetEvent(pCcutpicDlg->m_hAcqEvent1);
+			SetEvent(pCcutpicDlg->m_hAcqEvent2);
+		
+		 
+		}
+	}
+
+
+	return 1;
+
 }
 
 void CcutpicDlg::OnBnClickedSavepic()
@@ -475,6 +527,56 @@ void  CcutpicDlg::DrawMatToHDC(cv::Mat mat,HDC hDCDst,CRect rect)
 	cimge.CopyOf(&limge,1);
 	cimge.DrawToHDC(hDCDst,rect);
 
+}
+
+int CcutpicDlg::getDisparityImage(cv::Mat& src, cv::Mat& dest, bool isColor)
+{
+	// 将原始视差数据的位深转换为 8 位
+	cv::Mat m_src8u;
+	if (src.depth() != CV_8U)
+	{
+		//src.convertTo(m_src8u, CV_8U, 255/(m_numberOfDisparies*16.));
+		
+	} 
+	else
+	{
+		m_src8u = src;
+	}
+
+	// 转换为伪彩色图像 或 灰度图像
+	if (isColor)
+	{
+		if (dest.empty() || dest.type() != CV_8UC3 )
+		{
+			dest = cv::Mat::zeros(src.rows, src.cols, CV_8UC3);
+		}
+
+		for (int y=0;y<m_src8u.rows;y++)
+		{
+			for (int x=0;x<m_src8u.cols;x++)
+			{
+				uchar val = m_src8u.at<uchar>(y,x);
+				uchar r,g,b;
+
+				if (val==0) 
+					r = g = b = 0;
+				else
+				{
+					r = 255-val;
+					g = val < 128 ? val*2 : (uchar)((255 - val)*2);
+					b = val;
+				}
+
+				dest.at<cv::Vec3b>(y,x) = cv::Vec3b(r,g,b);
+			}
+		}
+	} 
+	else
+	{
+		m_src8u.copyTo(dest);
+	}
+
+	return 1;
 }
 
 void CcutpicDlg::OnBnClickedCaptureimages()
@@ -576,3 +678,25 @@ void CcutpicDlg::OnBnClickedShowdisp()
 	m_hShowdispThread=false;
 	m_hShowdispThread = (HANDLE) _beginthreadex(NULL, 0, ShowdispThread, this, 0, NULL);
 }
+
+
+void CcutpicDlg::OnBnClickedWorkonfile()
+{
+	m_hAcqEvent1 = CreateEvent(NULL,FALSE, FALSE, NULL);
+	m_hAcqThread1=false;
+	m_hAcqThread1 = (HANDLE) _beginthreadex(NULL, 0, AcqThread1, this, 0, NULL);
+
+	m_hAcqEvent2 = CreateEvent(NULL,FALSE, FALSE, NULL);
+	m_hAcqThread2=false;
+	m_hAcqThread2 = (HANDLE) _beginthreadex(NULL, 0, AcqThread2, this, 0, NULL);
+
+	m_hReadEvent1 = CreateEvent(NULL,FALSE, TRUE, NULL);
+	m_hReadEvent2 = CreateEvent(NULL,FALSE, TRUE, NULL);
+	m_hReadfromfileThread=false;
+	m_hReadfromfileThread = (HANDLE) _beginthreadex(NULL, 0, ReadfromfileThread, this, 0, NULL);
+
+
+
+	
+}
+
