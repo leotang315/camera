@@ -42,6 +42,27 @@
     <ClInclude Include="StereoCalib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="libelas\descriptor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libelas\elas.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libelas\filter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libelas\image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libelas\matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libelas\timer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="libelas\triangle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="cutpic.cpp">
@@ -60,6 +81,27 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StereoCalib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\descriptor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\elas.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\filter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\matrix.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\triangle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="libelas\image.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
