@@ -63,6 +63,10 @@ BEGIN_MESSAGE_MAP(CcutpicDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	//ON_MESSAGE(WM_SNAP_CHANGE1, OnSnapChange1)
+	//ON_MESSAGE(WM_SNAP_CHANGE2, OnSnapChange2)
+	//ON_MESSAGE(WM_SNAP_ERROR, OnSnapError)
+	ON_MESSAGE(WM_SNAP_STOP, OnSnapexStop)
 	ON_BN_CLICKED(IDC_OPENCAM, &CcutpicDlg::OnBnClickedOpencam)
 	ON_BN_CLICKED(IDC_SAVEPIC, &CcutpicDlg::OnBnClickedSavepic)
 	ON_BN_CLICKED(IDC_Capture_images, &CcutpicDlg::OnBnClickedCaptureimages)
@@ -70,7 +74,6 @@ BEGIN_MESSAGE_MAP(CcutpicDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_Stop_capture, &CcutpicDlg::OnBnClickedStopcapture)
 	ON_BN_CLICKED(IDC_Load_calib_data, &CcutpicDlg::OnBnClickedLoadcalibdata)
 	ON_BN_CLICKED(IDC_Remap_image, &CcutpicDlg::OnBnClickedRemapimage)
-	ON_BN_CLICKED(IDC_Show_disp, &CcutpicDlg::OnBnClickedShowdisp)
 END_MESSAGE_MAP()
 
 
@@ -111,11 +114,6 @@ BOOL CcutpicDlg::OnInitDialog()
 	num_capture=0;
 	capture_stat=false;
 	rectify_stat=false;
-
-	InitializeCriticalSection(&m_protect_mat1);
-	InitializeCriticalSection(&m_protect_mat2);
-	InitializeCriticalSection(&m_protect_workmat1);
-	InitializeCriticalSection(&m_protect_workmat2);
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -187,12 +185,11 @@ int CALLBACK  CcutpicDlg::SnapThreadCallback1(HV_SNAP_INFO *pInfo)
 {
 	CcutpicDlg *This = (CcutpicDlg *)(pInfo->pParam);
 	HWND hwnd = This->m_hWnd;
-	EnterCriticalSection(&This->m_protect_mat1); 
-	This->mat1 = This->m_cam1.getmat();          //获取图像复制到程序内存中mat1（以便处理）
-	LeaveCriticalSection(&This->m_protect_mat1); 
 
 	SetEvent(This->m_hAcqEvent1);
+	//::PostMessage(hwnd, WM_SNAP_CHANGE1, 0, 0);
 	
+
 	return 1;
 }
 
@@ -200,11 +197,10 @@ int CALLBACK  CcutpicDlg::SnapThreadCallback2(HV_SNAP_INFO *pInfo)
 {
 	CcutpicDlg *This = (CcutpicDlg *)(pInfo->pParam);
 	HWND hwnd = This->m_hWnd;
-	EnterCriticalSection(&This->m_protect_mat2); 
-	This->mat2 = This->m_cam2.getmat();          //获取图像复制到程序内存中mat2（以便处理）
-	LeaveCriticalSection(&This->m_protect_mat2); 
-	
+
 	SetEvent(This->m_hAcqEvent2);
+	//::PostMessage(hwnd, WM_SNAP_CHANGE2, 0, 0);
+	
 
 	return 1;
 }
@@ -317,7 +313,19 @@ int CALLBACK  CcutpicDlg::SnapThreadCallback2(HV_SNAP_INFO *pInfo)
 //}
 
 
-
+LRESULT CcutpicDlg::OnSnapexStop(WPARAM wParam, LPARAM lParam) 
+{
+	// TODO: Add your command handler code here
+	//HVSTATUS status =STATUS_OK;
+	
+	//	停止采集图像到内存，可以再次调用HVStartSnapEx启动数字摄像机采集
+	/*status = HVStopSnap(m_hhv);
+	HV_VERIFY(status);
+	if (HV_SUCCESS(status)) {
+		m_bStart = FALSE;
+	}*/
+	return 1;
+}
 
 void CcutpicDlg::OnBnClickedOpencam()
 {
@@ -332,8 +340,9 @@ void CcutpicDlg::OnBnClickedOpencam()
 	m_hAcqThread2=false;
 	m_hAcqThread2 = (HANDLE) _beginthreadex(NULL, 0, AcqThread2, this, 0, NULL);
 
-	
-
+	//m_push =CreateEvent(NULL,TRUE, TRUE, NULL);
+	InitializeCriticalSection(&m_protect_img1);
+	InitializeCriticalSection(&m_protect_img2);
 }
 
 unsigned CcutpicDlg::AcqThread1(void* params)
@@ -343,32 +352,29 @@ unsigned CcutpicDlg::AcqThread1(void* params)
 
 	while(WaitForSingleObject(pCcutpicDlg->m_hAcqEvent1, INFINITE)==WAIT_OBJECT_0)
 	{
-		//拷贝mat1内容放入workmat1
-		EnterCriticalSection(&pCcutpicDlg->m_protect_workmat1); 
-		EnterCriticalSection(&pCcutpicDlg->m_protect_mat1); 
-		pCcutpicDlg->workmat1 = pCcutpicDlg->mat1.clone();
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_mat1);  
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat1);
-		//校正workmat1图像，并将其考入临时变量处理
-		EnterCriticalSection(&pCcutpicDlg->m_protect_workmat1); 
-		if(pCcutpicDlg->rectify_stat)
-			remap(pCcutpicDlg->workmat1, pCcutpicDlg->workmat1, pCcutpicDlg->stereocal.m_remapmatrixs.mX1, pCcutpicDlg->stereocal.m_remapmatrixs.mY1, INTER_LINEAR);//对图像进行校正
-		Mat tempmat =pCcutpicDlg->workmat1.clone();
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat1);  
-
-		//连续采集图像并保存到内存vectmat1中	
-		if(pCcutpicDlg->capture_stat)									
-			pCcutpicDlg->vectmat1.push_back(tempmat);
-
-		//显示图像到指定图像控件			
+		EnterCriticalSection(&pCcutpicDlg->m_protect_img1); 
 		CWnd *pWnd1 = pCcutpicDlg->GetDlgItem(IDC_IMAGE1);
 		CDC  *pDC1	= pWnd1->GetDC();	
-		CRect rect;												//图片适应控件大小
-		pWnd1->GetClientRect(&rect);							//取得客户区尺寸
-		pDC1->SetStretchBltMode(STRETCH_HALFTONE);				//保持图片不失真
-		pCcutpicDlg->DrawMatToHDC(tempmat, pDC1->m_hDC,rect);	//已控件尺寸大小来绘图
-		pCcutpicDlg->ReleaseDC( pDC1 );
+		pCcutpicDlg->mat1 = pCcutpicDlg->m_cam1.getmat();
+
+
+		if(pCcutpicDlg->rectify_stat)
+			remap(pCcutpicDlg->mat1, pCcutpicDlg->mat1, pCcutpicDlg->stereocal.m_remapmatrixs.mX1, pCcutpicDlg->stereocal.m_remapmatrixs.mY1, INTER_LINEAR);
+		if(pCcutpicDlg->capture_stat)
+		{
+			cv::Mat tepmat=pCcutpicDlg->mat1.clone();
+			pCcutpicDlg->vectmat1.push_back( tepmat);
+		}
+			
 		
+
+	
+		CRect rect;                                   //图片适应控件大小
+		pWnd1->GetClientRect(&rect);	              //取得客户区尺寸
+		pDC1->SetStretchBltMode(STRETCH_HALFTONE);	  //保持图片不失真
+		pCcutpicDlg->DrawMatToHDC(pCcutpicDlg->mat1, pDC1->m_hDC,rect);//已控件尺寸大小来绘图
+		pCcutpicDlg->ReleaseDC( pDC1 );
+		LeaveCriticalSection(&pCcutpicDlg->m_protect_img1);   
 	}
 	return 1;
 }
@@ -380,66 +386,27 @@ unsigned CcutpicDlg::AcqThread2(void* params)
 
 	while(WaitForSingleObject(pCcutpicDlg->m_hAcqEvent2, INFINITE)==WAIT_OBJECT_0)
 	{
-		//拷贝mat2内容放入workmat2
-		EnterCriticalSection(&pCcutpicDlg->m_protect_workmat2); 
-		EnterCriticalSection(&pCcutpicDlg->m_protect_mat2); 
-		pCcutpicDlg->workmat2 = pCcutpicDlg->mat2.clone();
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_mat2);  
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat2);	
-		
-		//校正workmat2图像，并将其考入临时变量处理
-		EnterCriticalSection(&pCcutpicDlg->m_protect_workmat2);
-		if(pCcutpicDlg->rectify_stat)
-			remap(pCcutpicDlg->workmat2, pCcutpicDlg->workmat2, pCcutpicDlg->stereocal.m_remapmatrixs.mX2, pCcutpicDlg->stereocal.m_remapmatrixs.mY2, INTER_LINEAR);
-		cv::Mat tempmat=pCcutpicDlg->mat2.clone();	
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat2); 
-
-		//连续采集图像并保存到内存vectmat2中	
-		if(pCcutpicDlg->capture_stat)
-			pCcutpicDlg->vectmat2.push_back(tempmat);
-
-		//显示图像到指定图像控件	
+		EnterCriticalSection(&pCcutpicDlg->m_protect_img2); 
 		CWnd *pWnd2 = pCcutpicDlg->GetDlgItem(IDC_IMAGE2);
-		CDC  *pDC2	= pWnd2->GetDC();
-		CRect rect;														//图片适应控件大小
-		pWnd2->GetClientRect(&rect);									//取得客户区尺寸
-		pDC2->SetStretchBltMode(STRETCH_HALFTONE);						//保持图片不失真
-		pCcutpicDlg->DrawMatToHDC(tempmat, pDC2->m_hDC,rect); //已控件尺寸大小来绘图
-		pCcutpicDlg->ReleaseDC( pDC2 );  
-	}
-	return 1;
-}
+		CDC  *pDC2	= pWnd2->GetDC();	
+		pCcutpicDlg->mat2 = pCcutpicDlg->m_cam2.getmat();
 
-unsigned CcutpicDlg::ShowdispThread(void *params)
-{
-	CcutpicDlg* pCcutpicDlg = (CcutpicDlg*) params;
-	Elas::parameters param;
-	Elas elas(param);
-	Mat tempmat1,tempmat2,disp;
-	if(!pCcutpicDlg->rectify_stat)
-	{
-		   //没校正图像处理代码
-	}
-	while(1)
-	{
-		
-		EnterCriticalSection(&pCcutpicDlg->m_protect_workmat1); 
-		EnterCriticalSection(&pCcutpicDlg->m_protect_workmat2); 
-		tempmat1 = pCcutpicDlg->workmat1.clone();
-		tempmat2 = pCcutpicDlg->workmat2.clone();
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat2);  
-		LeaveCriticalSection(&pCcutpicDlg->m_protect_workmat1); 
 
-		elas.function(tempmat1,tempmat2,disp);		
-		CWnd *pWnd3 = pCcutpicDlg->GetDlgItem(IDC_IMAGE3);
-		CDC  *pDC3	= pWnd3->GetDC();	
-		CRect rect;											//图片适应控件大小
-		pWnd3->GetClientRect(&rect);						//取得客户区尺寸
-		pDC3->SetStretchBltMode(STRETCH_HALFTONE);			//保持图片不失真
-		pCcutpicDlg->DrawMatToHDC(disp, pDC3->m_hDC,rect);  //已控件尺寸大小来绘图
-		pCcutpicDlg->ReleaseDC( pDC3 );
+		if(pCcutpicDlg->rectify_stat)
+			remap(pCcutpicDlg->mat2, pCcutpicDlg->mat2, pCcutpicDlg->stereocal.m_remapmatrixs.mX2, pCcutpicDlg->stereocal.m_remapmatrixs.mY2, INTER_LINEAR);
+		if(pCcutpicDlg->capture_stat)
+		{
+			cv::Mat tepmat=pCcutpicDlg->mat2.clone();	
+			pCcutpicDlg->vectmat2.push_back(tepmat);
+		}
+			
+		CRect rect;                                   //图片适应控件大小
+		pWnd2->GetClientRect(&rect);	              //取得客户区尺寸
+		pDC2->SetStretchBltMode(STRETCH_HALFTONE);	  //保持图片不失真
+		pCcutpicDlg->DrawMatToHDC(pCcutpicDlg->mat2, pDC2->m_hDC,rect); //已控件尺寸大小来绘图
+		pCcutpicDlg->ReleaseDC( pDC2 );
+		LeaveCriticalSection(&pCcutpicDlg->m_protect_img2);   
 	}
-	
 	return 1;
 }
 
@@ -456,14 +423,14 @@ void CcutpicDlg::OnBnClickedSavepic()
 	std::string right_img_file_name = dir + "/right_" + base_name;
 
 	//ResetEvent(m_push);
-	EnterCriticalSection(&m_protect_workmat1); 
-	EnterCriticalSection(&m_protect_workmat2); 
+	EnterCriticalSection(&m_protect_img1); 
+	EnterCriticalSection(&m_protect_img2); 
 	//m_imge1.Save(left_img_file_name.c_str());
 	//m_imge2.Save(right_img_file_name.c_str());
-	cv::imwrite(left_img_file_name,workmat1,compression_params);
-	cv::imwrite(right_img_file_name,workmat2,compression_params);
-	LeaveCriticalSection(&m_protect_workmat2);   
-	LeaveCriticalSection(&m_protect_workmat1);  
+	cv::imwrite(left_img_file_name,mat1,compression_params);
+	cv::imwrite(right_img_file_name,mat2,compression_params);
+	LeaveCriticalSection(&m_protect_img2);   
+	LeaveCriticalSection(&m_protect_img1);  
 	//SetEvent(m_push);
 
 }
@@ -500,23 +467,23 @@ void CcutpicDlg::OnTimer(UINT_PTR nIDEvent)
 	//std::string right_img_file_name = dir + "/right_" + base_name;
 
 	////ResetEvent(m_push);
-	//EnterCriticalSection(&m_protect_mat1); 
-	//EnterCriticalSection(&m_protect_mat2); 
+	//EnterCriticalSection(&m_protect_img1); 
+	//EnterCriticalSection(&m_protect_img2); 
 	////m_imge1.Save(left_img_file_name.c_str());
 	////m_imge2.Save(right_img_file_name.c_str());
 	//cv::imwrite(left_img_file_name,mat1,compression_params);
 	//cv::imwrite(right_img_file_name,mat2,compression_params);
-	//LeaveCriticalSection(&m_protect_mat2);   
-	//LeaveCriticalSection(&m_protect_mat1);  
+	//LeaveCriticalSection(&m_protect_img2);   
+	//LeaveCriticalSection(&m_protect_img1);  
 
 	//t = ((double)cv::getTickCount() - t)/cv::getTickFrequency();
 
-	//EnterCriticalSection(&m_protect_mat1); 
-	//EnterCriticalSection(&m_protect_mat2); 
+	//EnterCriticalSection(&m_protect_img1); 
+	//EnterCriticalSection(&m_protect_img2); 
 	//vectmat1.push_back(mat1);
 	//vectmat2.push_back(mat2);
-	//LeaveCriticalSection(&m_protect_mat2);   
-	//LeaveCriticalSection(&m_protect_mat1);  
+	//LeaveCriticalSection(&m_protect_img2);   
+	//LeaveCriticalSection(&m_protect_img1);  
 
 	//SetEvent(m_push);
 	CDialogEx::OnTimer(nIDEvent);
@@ -568,11 +535,4 @@ void CcutpicDlg::OnBnClickedLoadcalibdata()
 void CcutpicDlg::OnBnClickedRemapimage()
 {
 	rectify_stat =true;
-}
-
-
-void CcutpicDlg::OnBnClickedShowdisp()
-{
-	m_hShowdispThread=false;
-	m_hShowdispThread = (HANDLE) _beginthreadex(NULL, 0, ShowdispThread, this, 0, NULL);
 }
